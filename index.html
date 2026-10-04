@@ -34,11 +34,7 @@
 </head>
 <body class="text-gray-100 antialiased min-h-screen">
 
-  <!-- ===================== PASTE YOUR API KEY HERE ===================== -->
-  <script>
-    const API_KEY = "2a7c5d30d1f70302e09be08530bb7ff6";  // ← Your key is already here
-  </script>
-  <!-- ================================================================== -->
+  <script>const API_KEY = "439bb62de7b52c1cd0e6565c94ae528d";</script>
 
   <!-- HEADER -->
   <header class="sticky top-0 z-50 bg-surface-900/90 backdrop-blur-md border-b border-surface-700">
@@ -206,11 +202,19 @@
 
     async function apiFetch(endpoint) {
       const res = await fetch(BASE_URL + endpoint, {
+        method: "GET",
         headers: { "x-apisports-key": API_KEY }
       });
-      if (!res.ok) throw new Error("API " + res.status);
+      if (!res.ok) {
+        if (res.status === 429) throw new Error("Daily request limit reached (100/day on free plan)");
+        if (res.status === 403) throw new Error("API key invalid or blocked");
+        throw new Error("API error " + res.status);
+      }
       const data = await res.json();
-      if (data.errors && Object.keys(data.errors).length) throw new Error(JSON.stringify(data.errors));
+      if (data.errors && Object.keys(data.errors).length) {
+        const errMsg = Object.values(data.errors).join(", ");
+        throw new Error(errMsg || "API returned an error");
+      }
       return data;
     }
 
@@ -389,6 +393,4 @@
                   bet.values.forEach(v => markets.push({
                     name: "Match Winner",
                     selection: v.value === "Home" ? f.teams.home.name : v.value === "Away" ? f.teams.away.name : "Draw",
-                    odd: v.odd, prob: oddsToProb(v.odd), highProb: isHighProb(v.odd)
-                  }));
-               
+    
